@@ -1,0 +1,14 @@
+yuxin@yuxin-Lenovo-Yoga-C940-14IIL:~$ rostopic type /camera/color/image_raw 
+sensor_msgs/Image
+yuxin@yuxin-Lenovo-Yoga-C940-14IIL:~$ rosmsg show sensor_msgs/Image
+std_msgs/Header header
+  uint32 seq
+  time stamp
+  string frame_id
+uint32 height
+uint32 width
+string encoding
+uint8 is_bigendian
+uint32 step
+uint8[] data
+

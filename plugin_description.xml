@@ -1,0 +1,9 @@
+<library path="lib/librviz_plugins">
+  <class name="rviz_plugins/CtrlPad"
+         type="rviz_plugins::ControlPad"
+         base_class_type="rviz::Panel">
+    <description>
+      A panel widget sending simple stop signal.
+    </description>
+  </class>
+</library>
