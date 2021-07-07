@@ -8,6 +8,7 @@
 #include <std_msgs/Float32.h>
 #include <sensor_msgs/Image.h>
 #include <string>
+#include <vector>
 #include <opencv2/opencv.hpp>
 #include "image_transport/image_transport.h"
 #include "opencv2/highgui/highgui.hpp"
@@ -31,6 +32,7 @@ namespace rviz_plugins {
         protected Q_SLOTS:
         void sendStop();                    // send stop
         void saveImg();                     // save picture
+        void callSpin();
         void imgCB(const sensor_msgs::Image::ConstPtr& img);
         void renewSensor1Data(const std_msgs::Float32::ConstPtr& msg);        // renew sensor data
         void renewSensor2Data(const std_msgs::Float32::ConstPtr& msg);        // renew sensor data
@@ -56,6 +58,7 @@ namespace rviz_plugins {
         QLabel* label_sensor2_data_;
         QLabel* label_sensor3_data_;
         QLabel* label_sensor4_data_;
+        QLabel* label_cam_img_;
 
         protected:
         // The ROS node handle.
@@ -68,6 +71,8 @@ namespace rviz_plugins {
         ros::Subscriber sensor2_subscriber_;
         ros::Subscriber sensor3_subscriber_;
         ros::Subscriber sensor4_subscriber_;
+
+        // ros::AsyncSpinner s_;
         
         // private data
         cv_bridge::CvImagePtr pImg_cv_;

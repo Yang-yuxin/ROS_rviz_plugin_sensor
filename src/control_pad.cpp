@@ -7,14 +7,39 @@
 #include <QTimer>
 #include <QDebug>
 #include <QWidget>
+#include <QImage>
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/objdetect/objdetect.hpp>  
+#include <opencv2/highgui/highgui.hpp>  
+#include <opencv2/imgproc/imgproc.hpp>  
 #include <sys/stat.h>
 #include <sys/types.h> 
 #include <time.h>
-
 #include "control_pad.h"
 
-namespace rviz_plugins {
+using cv::Mat;
+using std::vector;
+using cv::Point2f;
+using cv::Rect;
+using cv::Point;
+using cv::Size;
+using cv::Scalar;
+using std::cout;
+using cv::waitKey;
 
+cv::Point getCenterPoint(Rect rect)
+{
+	Point cpt;
+	cpt.x = rect.x + cvRound(rect.width / 2.0);
+	cpt.y = rect.y + cvRound(rect.height / 2.0);
+	return cpt;
+}
+
+namespace rviz_plugins {
+void ControlPad::callSpin() {
+	ros::spinOnce();
+	ROS_INFO("call spin.");
+}
 
 void ControlPad::sendStop() {
   if( ros::ok() && stop_publisher_ )
@@ -45,10 +70,23 @@ void ControlPad::saveImg() {
 }
 
 void ControlPad::imgCB(const sensor_msgs::Image::ConstPtr& msg){
-  //ROS_INFO_STREAM("Got img.");
-  pImg_cv_ =  cv_bridge::toCvCopy(*msg, sensor_msgs::image_encodings::BGR8);
+  	//ROS_INFO_STREAM("Got img.");
+  	pImg_cv_ =  cv_bridge::toCvCopy(*msg, sensor_msgs::image_encodings::BGR8);
+	cv::Mat ShowImg = pImg_cv_->image;
+    QImage Img;
+    if (ShowImg.channels() == 3)//RGB Img
+    {
+        cv::cvtColor(ShowImg, ShowImg, CV_BGR2RGB);//颜色空间转换
+        Img = QImage((const uchar*)(ShowImg.data), ShowImg.cols, ShowImg.rows, ShowImg.cols * ShowImg.channels(), QImage::Format_RGB888);
+    }
+    else//Gray Img
+    {
+        Img = QImage((const uchar*)(ShowImg.data), ShowImg.cols, ShowImg.rows, ShowImg.cols*ShowImg.channels(), QImage::Format_Indexed8);
+    }
+    label_cam_img_->setPixmap(QPixmap::fromImage(Img));
 
 }
+
 
 
 void ControlPad::renewSensor1Data(const std_msgs::Float32::ConstPtr& msg) { Setlabel1(static_cast<double>(msg->data));}
@@ -60,7 +98,9 @@ ControlPad::ControlPad(QWidget* parent):rviz::Panel( parent ){
     img_cnt_ = 0;
     // set topic names
     stop_topic_name_ = "/send_stop_signal";
-    img_topic_name_ = "/camera/color/image_raw";
+    img_topic_name_ = "/darknet_ros/detection_image";
+	//img_topic_name_ = "/camera/color/image_raw";
+
     sensor1_topic_name = "/sensor1";
     sensor2_topic_name = "/sensor2";
     sensor3_topic_name = "/sensor3";
@@ -70,6 +110,10 @@ ControlPad::ControlPad(QWidget* parent):rviz::Panel( parent ){
     QVBoxLayout* layout = new QVBoxLayout;
 
     // set layout
+	QHBoxLayout* layout0 = new QHBoxLayout;
+	label_cam_img_ = new QLabel();
+	layout0->addWidget( label_cam_img_);
+	label_cam_img_->setScaledContents(true);
     QHBoxLayout* layout1 = new QHBoxLayout;
     layout1->addWidget( new QLabel( "Sensor 1:" ));
     label_sensor1_data_ = new QLabel("0.00");
@@ -88,6 +132,7 @@ ControlPad::ControlPad(QWidget* parent):rviz::Panel( parent ){
     layout4->addWidget(label_sensor4_data_);
 
     // add layouts to top layout 
+	layout->addLayout(layout0);
     layout->addLayout(layout1);
     layout->addLayout(layout2);
     layout->addLayout(layout3);
@@ -106,18 +151,18 @@ ControlPad::ControlPad(QWidget* parent):rviz::Panel( parent ){
     connect( saveBtn, SIGNAL( clicked() ), this, SLOT( saveImg() ));
     connect( stopBtn, SIGNAL( clicked() ), this, SLOT( sendStop() )); 
     // create sensor subscribers and publishers
-    stop_publisher_ = nh_.advertise<std_msgs::Int8>(stop_topic_name_,10);
-    img_subscriber_ = nh_.subscribe<sensor_msgs::Image>(img_topic_name_, 10, boost::bind(&ControlPad::imgCB, this, _1));
+    //stop_publisher_ = nh_.advertise<std_msgs::Int8>(stop_topic_name_,10);
+    img_subscriber_ = nh_.subscribe<sensor_msgs::Image>(img_topic_name_, 1, boost::bind(&ControlPad::imgCB, this, _1));
     sensor1_subscriber_ =  nh_.subscribe<std_msgs::Float32>(sensor1_topic_name, 10, boost::bind(&ControlPad::renewSensor1Data, this, _1));
     sensor2_subscriber_ =  nh_.subscribe<std_msgs::Float32>(sensor2_topic_name, 10, boost::bind(&ControlPad::renewSensor2Data, this, _1));
     sensor3_subscriber_ =  nh_.subscribe<std_msgs::Float32>(sensor3_topic_name, 10, boost::bind(&ControlPad::renewSensor3Data, this, _1));
     sensor4_subscriber_ =  nh_.subscribe<std_msgs::Float32>(sensor4_topic_name, 10, boost::bind(&ControlPad::renewSensor4Data, this, _1));
-    // //create a Timer for test
-    // QTimer* output_timer = new QTimer( this );
-    // output_timer->start( 100 );
-    // //connect Timer signal and slot
-    // connect( output_timer, SIGNAL( timeout() ), this, SLOT( sendVel() ));
-    ros::spinOnce();
+    //create a Timer for test
+    QTimer* mytimer = new QTimer( this );
+	connect( mytimer, SIGNAL( timeout() ), this, SLOT( callSpin() ));		//connect Timer signal and slot
+    mytimer->start( 50 );
+
+	// s_.start();
 
     
 
