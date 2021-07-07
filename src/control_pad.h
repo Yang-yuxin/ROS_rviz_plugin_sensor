@@ -6,7 +6,13 @@
 #include <rviz/panel.h>
 #include <std_msgs/Int8.h>
 #include <std_msgs/Float32.h>
+#include <sensor_msgs/Image.h>
 #include <string>
+#include <opencv2/opencv.hpp>
+#include "image_transport/image_transport.h"
+#include "opencv2/highgui/highgui.hpp"
+#include "cv_bridge/cv_bridge.h"
+#include "sensor_msgs/image_encodings.h"
 
 class QString;
 class QPushButton;
@@ -25,6 +31,7 @@ namespace rviz_plugins {
         protected Q_SLOTS:
         void sendStop();                    // send stop
         void saveImg();                     // save picture
+        void imgCB(const sensor_msgs::Image::ConstPtr& img);
         void renewSensor1Data(const std_msgs::Float32::ConstPtr& msg);        // renew sensor data
         void renewSensor2Data(const std_msgs::Float32::ConstPtr& msg);        // renew sensor data
         void renewSensor3Data(const std_msgs::Float32::ConstPtr& msg);        // renew sensor data
@@ -38,6 +45,7 @@ namespace rviz_plugins {
         public:
         // Qt widgets
         std::string stop_topic_name_;
+        std::string img_topic_name_;
         std::string sensor1_topic_name;
         std::string sensor2_topic_name;
         std::string sensor3_topic_name;
@@ -49,22 +57,21 @@ namespace rviz_plugins {
         QLabel* label_sensor3_data_;
         QLabel* label_sensor4_data_;
 
+        protected:
         // The ROS node handle.
         ros::NodeHandle nh_;
 
         // ROS publishers and subscribers
         ros::Publisher stop_publisher_;
+        ros::Subscriber img_subscriber_;
         ros::Subscriber sensor1_subscriber_;
         ros::Subscriber sensor2_subscriber_;
         ros::Subscriber sensor3_subscriber_;
         ros::Subscriber sensor4_subscriber_;
         
         // private data
-        float sensor1_data_;
-        float sensor2_data_;
-        float sensor3_data_;
-        float sensor4_data_;        
-
+        cv_bridge::CvImagePtr pImg_cv_;
+        int img_cnt_;
     };
 }
 
